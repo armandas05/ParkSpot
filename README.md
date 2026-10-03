@@ -10,7 +10,7 @@
 Sistema skirta privačių ir riboto patekimo parkavimo aikštelių naudotojams bei jų valdytojams ir leis peržiūrėti aikštelės vietų užimtumą, pasirinkti bei rezervuoti parkavimo vietą norimam laikotarpiui.
 
 **Problema ir dabartinis procesas:**
-Privačiose parkavimo aikštelėse, pavyzdžiui, prie bendrabučių, daugiabučių ar įmonių, vairuotojai ne visada žino, ar atvykę ras laisvą parkavimo vietą. Dažnai laisvos vietos ieškoma tik atvykus į aikštelę ir fiziškai ją apvažiuojant. Taip pat gali pasitaikyti atvejų, kai automobiliai pastatomi kitam asmeniui skirtoje ar rezervuotoje vietoje. Dėl to vairuotojai sugaišta laiko ieškodami vietos, o aikštelės valdytojui sudėtingiau kontroliuoti jos užimtumą.
+Privačiose parkavimo aikštelėse, pavyzdžiui, prie bendrabučių, daugiabučių ar įmonių, vairuotojai ne visada žino, ar atvykę ras laisvą parkavimo vietą. Dažnai laisvos vietos ieškoma tik atvykus į aikštelę ir fiziškai ją apvažiuojant. Papildoma problema yra netinkamas arba nesąžiningas parkavimas, kai vairuotojas užima kitam asmeniui priklausančią ar jo rezervuotą vietą. Tokiu atveju rezervaciją turintis vairuotojas atvykęs nebegali pasinaudoti jam skirta vieta. Dėl to vairuotojai sugaišta laiko ieškodami vietos, kyla konfliktų tarp aikštelės naudotojų, o aikštelės valdytojui sudėtingiau kontroliuoti jos užimtumą.
 
 **Nauda:**
 Sistema leis vairuotojui prieš atvykstant peržiūrėti parkavimo aikštelę, matyti vietų prieinamumą pasirinktu laikotarpiu ir iš anksto rezervuoti tinkamą vietą. Tai turėtų sumažinti laiką, praleidžiamą ieškant laisvos vietos, ir padėti efektyviau išnaudoti aikštelės vietas. Aikštelės valdytojui sistema suteiks galimybę valdyti parkavimo vietas ir stebėti jų rezervacijas.
@@ -22,7 +22,7 @@ Numatomi du pagrindiniai sistemos naudotojų tipai:
 * **Parkavimo aikštelės valdytojas** – galės valdyti aikštelės parkavimo vietas, jų prieinamumą ir peržiūrėti rezervacijas.
 
 **Prielaidos:**
-Daroma prielaida, kad kiekviena sistemoje registruota parkavimo aikštelė turi iš anksto apibrėžtas ir sunumeruotas parkavimo vietas. Taip pat laikoma, kad aikštelės valdytojas pateikia teisingą informaciją apie vietas ir jų prieinamumą. Prototipe fizinis automobilio buvimas konkrečioje vietoje nebus nustatomas naudojant kameras ar parkavimo jutiklius. Fizinis šlagbaumas taip pat gali būti imituojamas programinėje sistemoje.
+Daroma prielaida, kad kiekviena sistemoje registruota parkavimo aikštelė turi iš anksto apibrėžtas ir sunumeruotas parkavimo vietas. Taip pat laikoma, kad aikštelės valdytojas pateikia teisingą informaciją apie vietas ir jų prieinamumą. Prototipe fizinis automobilio buvimas konkrečioje vietoje nebus automatiškai nustatomas naudojant kameras ar parkavimo jutiklius, todėl sistema negalės automatiškai nustatyti, ar vairuotojas automobilį pastatė būtent savo rezervuotoje vietoje. Ateityje ši problema galėtų būti sprendžiama integruojant papildomas parkavimo kontrolės priemones. Fizinis šlagbaumas prototipe taip pat gali būti imituojamas programinėje sistemoje.
 
 ---
 
@@ -36,7 +36,7 @@ Daroma prielaida, kad kiekviena sistemoje registruota parkavimo aikštelė turi 
 | Įvažiavimo informacijos pateikimas | Nuskenavus prie aikštelės esantį QR kodą atidaryti konkrečios aikštelės informaciją ir parodyti galimas parkavimo vietas | Pagalbinė funkcija                        |
 
 **Į kursinio darbo apimtį neįeina:**
-Pirmoje sistemos versijoje neplanuojama įgyvendinti realaus bankinių kortelių mokėjimų apdorojimo, automobilių numerių atpažinimo kameromis, fizinių parkavimo vietų užimtumo jutiklių ir tiesioginės integracijos su realiu šlagbaumu. Taip pat neplanuojama įgyvendinti ilgalaikės parkavimo vietų nuomos. Šios funkcijos galėtų būti pridedamos vėlesnėse sistemos versijose.
+Pirmoje sistemos versijoje neplanuojama įgyvendinti realaus bankinių kortelių mokėjimų apdorojimo, automobilių numerių atpažinimo kameromis, fizinių parkavimo vietų užimtumo jutiklių ir tiesioginės integracijos su realiu šlagbaumu. Mobiliąją programėlę planuojama svarstyti kaip tolimesnę sistemos plėtros kryptį, kai bus sukurtas veikiantis internetinės sistemos prototipas.
 
 ---
 
@@ -159,15 +159,17 @@ Papildomi prieinamumo patikrinimai ir transakcijų naudojimas apsunkina rezervav
 └──────────────────────────────┘
 ```
 
-| Sistemos dalis       | Atsakomybė                                                                                                       |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Web aplikacija       | Pateikti naudotojo sąsają aikštelių ir vietų peržiūrai bei rezervacijų atlikimui                                 |
-| ASP.NET Core Web API | Priimti naudotojo užklausas, vykdyti verslo logiką ir perduoti duomenis tarp naudotojo sąsajos bei duomenų bazės |
-| Rezervavimo modulis  | Tikrinti vietos prieinamumą, aptikti rezervacijų konfliktus ir kurti rezervacijas                                |
-| Duomenų bazė         | Saugoti naudotojų, aikštelių, parkavimo vietų ir rezervacijų duomenis                                            |
+| Sistemos dalis       | Atsakomybė                                                                                                                                                                                                           |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Web aplikacija       | Pateikti naudotojo sąsają aikštelių ir vietų peržiūrai bei rezervacijų atlikimui. Sąsaja turės būti pritaikyta ir didesnėms aikštelėms, kuriose visas parkavimo vietas vienu metu atvaizduoti gali būti nepraktiška. |
+| ASP.NET Core Web API | Priimti naudotojo užklausas, vykdyti verslo logiką ir perduoti duomenis tarp naudotojo sąsajos bei duomenų bazės                                                                                                     |
+| Rezervavimo modulis  | Tikrinti vietos prieinamumą, aptikti rezervacijų konfliktus ir kurti rezervacijas                                                                                                                                    |
+| Duomenų bazė         | Saugoti naudotojų, aikštelių, parkavimo vietų ir rezervacijų duomenis                                                                                                                                                |
 
 **Planuojamos technologijos ir pasirinkimo priežastys:**
-Serverio daliai planuojama naudoti **C# ir ASP.NET Core Web API**, nes ši platforma tinkama REST tipo interneto paslaugoms ir leidžia aiškiai atskirti sistemos sluoksnius bei verslo logiką. Duomenų bazės operacijoms planuojama naudoti **Entity Framework Core**, o duomenų saugojimui – reliacinę duomenų bazę, pavyzdžiui, **PostgreSQL**. Naudotojo sąsajai planuojama naudoti interneto technologijas, galimai **React**, kad sistema būtų pasiekiama tiek kompiuterio, tiek telefono naršyklėje. Konkrečios technologijos projekto įgyvendinimo metu gali būti patikslintos.
+Serverio daliai planuojama naudoti C# ir ASP.NET Core Web API, nes ši platforma tinkama REST tipo interneto paslaugoms ir leidžia aiškiai atskirti sistemos sluoksnius bei verslo logiką. Duomenų bazės operacijoms planuojama naudoti Entity Framework Core, o duomenų saugojimui – MySQL reliacinę duomenų bazę. Naudotojo sąsajai planuojama naudoti interneto technologijas, galimai React, kad sistema būtų pasiekiama tiek kompiuterio, tiek telefono naršyklėje.
+
+Pirmiausia planuojama sukurti veikiančią internetinės sistemos prototipo versiją. Turint veikiantį pagrindinės sistemos prototipą, ateityje planuojama apsvarstyti ir atskiros mobiliosios programėlės kūrimą. Kadangi pagrindinė sistemos verslo logika bus pasiekiama per Web API, mobili programa galėtų naudoti tą pačią serverio dalį ir duomenų bazę kaip ir internetinė aplikacija.
 
 ---
 
@@ -207,11 +209,13 @@ Ne. Šiuo metu AI nėra planuojamas kaip parkavimo rezervavimo sistemos funkcion
 **Būsimo prototipo veikimo scenarijus:**
 Prototipo demonstracijos metu naudotojas pasirinks parkavimo aikštelę ir nurodys, kad nori parkuotis 2026-10-10 nuo 18:00 iki 21:00. Sistema pateiks tuo laikotarpiu prieinamas parkavimo vietas. Naudotojas pasirinks, pavyzdžiui, A06 vietą ir pateiks rezervaciją. Sistema patikrins jos prieinamumą ir sukurs rezervaciją. Pakartotinai bandant rezervuoti A06 persidengiančiam laikotarpiui, sistema turės atmesti rezervaciją ir informuoti apie konfliktą.
 
-| Rizika arba neaiškumas                                                                          | Kaip patikrinsiu arba sumažinsiu                                                                                                                                   |
-| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Vienu metu pateiktos rezervacijos gali sukurti tos pačios vietos rezervavimo konfliktą          | Sukursiu integracinius testus vienalaikėms rezervacijoms ir rezervacijos išsaugojimui naudosiu transakciją bei pakartotinį prieinamumo patikrinimą                 |
-| Interaktyvaus aikštelės plano realizavimas gali užimti per daug laiko                           | Pirmoje prototipo versijoje naudosiu supaprastintą aikštelės vietų atvaizdavimą. Sudėtingesnį vizualų planą įgyvendinsiu tik tuo atveju, jei liks pakankamai laiko |
-| Pasirinktos technologijos ar sistemos struktūra įgyvendinimo metu gali pasirodyti per sudėtinga | Pirmiausia įgyvendinsiu minimalų veikimo scenarijų nuo rezervacijos užklausos iki jos išsaugojimo.                                                                 |
+| Rizika arba neaiškumas                                                                                                                               | Kaip patikrinsiu arba sumažinsiu                                                                                                                                                                                                                                                                                    |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vienu metu pateiktos rezervacijos gali sukurti tos pačios vietos rezervavimo konfliktą                                                               | Sukursiu integracinius testus vienalaikėms rezervacijoms ir rezervacijos išsaugojimui naudosiu transakciją bei pakartotinį prieinamumo patikrinimą                                                                                                                                                                  |
+| Interaktyvaus aikštelės plano realizavimas gali užimti per daug laiko                                                                                | Pirmoje prototipo versijoje naudosiu supaprastintą aikštelės vietų atvaizdavimą. Sudėtingesnį vizualų planą įgyvendinsiu tik tuo atveju, jei liks pakankamai laiko                                                                                                                                                  |
+| Pasirinktos technologijos ar sistemos struktūra įgyvendinimo metu gali pasirodyti per sudėtinga                                                      | Pirmiausia įgyvendinsiu minimalų veikimo scenarijų nuo rezervacijos užklausos iki jos išsaugojimo.                                                                                                                                                                                                                  |
+| Didelėse parkavimo aikštelėse visų parkavimo vietų atvaizdavimas viename plane gali būti nepatogus naudotojui, ypač naudojantis mobiliuoju įrenginiu | Kuriant prototipą bus išbandyti skirtingi aikštelės atvaizdavimo būdai. Didelės aikštelės galėtų būti skirstomos į zonas ar sektorius, o naudotojui pirmiausia būtų rodoma pasirinkta aikštelės dalis ir joje esančios vietos. Taip pat bus svarstomas plano priartinimas, nutolinimas ir laisvų vietų filtravimas. |
+
 
 ## Šaltiniai, jei naudojote
 
