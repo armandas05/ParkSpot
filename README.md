@@ -109,10 +109,10 @@ Bus imituojama situacija, kai du naudotojai beveik tuo pačiu metu bando rezervu
 Iš dviejų konfliktuojančių rezervacijos užklausų tik viena turi būti sėkmingai išsaugota. Duomenų bazėje negali atsirasti dvi aktyvios tos pačios parkavimo vietos rezervacijos su persidengiančiais laikotarpiais.
 
 **Numatytas projektavimo sprendimas:**
-Rezervacijos kūrimas ir galutinis vietos prieinamumo patikrinimas bus atliekami serverio pusėje. Prieš išsaugant rezervaciją bus pakartotinai tikrinami galimi laiko konfliktai. Duomenų bazės operacijoms bus naudojamos transakcijos, kad vienu metu vykdomos rezervacijos nesukurtų nekorektiškos būsenos.
+Rezervacijos kūrimas bus vykdomas duomenų bazės transakcijoje. Prieš tikrinant pasirinktos parkavimo vietos prieinamumą, atitinkamas parkavimo vietos įrašas bus užrakinamas transakcijos laikotarpiui. Kol pirmoji transakcija tikrina esamas rezervacijas ir kuria naują rezervaciją, kita transakcija, bandanti rezervuoti tą pačią vietą, turės laukti, kol pirmoji bus užbaigta. Gavusi prieigą antroji transakcija iš naujo patikrins vietos prieinamumą ir aptiks jau sukurtą rezervaciją, todėl konfliktuojanti rezervacija bus atmesta. Užraktas bus laikomas tik rezervacijos patikrinimo ir sukūrimo metu, kad kuo mažiau būtų ribojamos kitos sistemos operacijos.
 
 **Kaip patikrinsiu vėlesniame etape:**
-Bus sukurtas integracinis testas, kuriame dvi užklausos bandys rezervuoti tą pačią vietą tuo pačiu arba persidengiančiu laikotarpiu. Po užklausų vykdymo bus patikrinta, kad duomenų bazėje egzistuoja tik viena sėkminga rezervacija.
+Bus sukurtas integracinis testas, kuriame dvi lygiagrečiai vykdomos užklausos bandys rezervuoti tą pačią parkavimo vietą persidengiančiam laikotarpiui. Bus patikrinta, kad pirmoji transakcija rezervavimo metu užrakina vietą, antroji negali atlikti konfliktuojančios rezervacijos iki pirmosios transakcijos pabaigos, o po pakartotinio prieinamumo patikrinimo viena iš rezervacijų yra atmetama. Galutinis kriterijus – duomenų bazėje lieka tik viena iš dviejų konfliktuojančių rezervacijų.
 
 **Sprendimo kaina arba ribojimas:**
 Papildomi prieinamumo patikrinimai ir transakcijų naudojimas apsunkina rezervavimo logiką ir gali šiek tiek padidinti užklausos vykdymo laiką, tačiau padeda užtikrinti duomenų vientisumą.
