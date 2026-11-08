@@ -1,222 +1,165 @@
 # ParkSpot
 
-# Parkavimo vietų rezervavimo sistema
+Programų sistemų projektavimo kursinio darbo II etapas - veikiantis parkavimo vietų rezervavimo prototipas. I etapo aprašymas: [docs/phase-1.md](docs/phase-1.md).
 
-## Kursinio darbo I dalis: projektavimo dokumentas
+Vairuotojas gali rezervuoti vietą bet kurios sistemoje esančios organizacijos aikštelėje. Organizacijos administratorius valdo tik savo organizacijos aikšteles, vietas ir rezervacijas. Pagrindinis modulis - rezervavimas su verslo taisyklėmis, konfliktų apdorojimu ir duomenų išsaugojimu MySQL.
 
-## 1. Problema ir idėja
+## Įgyvendintos funkcijos
 
-**Sistema vienu sakiniu:**
-Sistema skirta privačių ir riboto patekimo parkavimo aikštelių naudotojams bei jų valdytojams ir leis peržiūrėti aikštelės vietų užimtumą, pasirinkti bei rezervuoti parkavimo vietą norimam laikotarpiui.
+- Vairuotojo ir administratoriaus registracija, prisijungimas bei atsijungimas. Administratoriaus registracija sukuria naują organizaciją. Nuoroda į kitą prisijungimo puslapį rodoma tik neprisijungus.
+- Aikštelės pasirinkimas ir numeruotų vietų kortelės, po 30 vietų puslapyje. Vairuotojas mato šiuo metu laisvas vietas, administratorius - visas savo pasirinktos aikštelės vietas.
+- Pasirinkus vietą, rezervuojama nuo dabartinio laiko nurodytai trukmei. Tikrinamas visas laikotarpis, įskaitant būsimas rezervacijas.
+- Savo rezervacijų peržiūra ir atšaukimas. Rezervacijos identifikatorius sąsajoje rodomas tik administratoriui.
+- Administratoriaus aikštelių kūrimas, vietų pridėjimas pagal kiekį ir vietos uždarymas naujoms rezervacijoms.
+- Organizacijų duomenų atskyrimas sistemos logikoje ir SQL užklausose.
+- Keturi automatiniai testai: trys rezervavimo modulio ir vienas organizacijų izoliavimo testas.
 
-**Problema ir dabartinis procesas:**
-Privačiose parkavimo aikštelėse, pavyzdžiui, prie bendrabučių, daugiabučių ar įmonių, vairuotojai ne visada žino, ar atvykę ras laisvą parkavimo vietą. Dažnai laisvos vietos ieškoma tik atvykus į aikštelę ir fiziškai ją apvažiuojant. Papildoma problema yra netinkamas arba nesąžiningas parkavimas, kai vairuotojas užima kitam asmeniui priklausančią ar jo rezervuotą vietą. Tokiu atveju rezervaciją turintis vairuotojas atvykęs nebegali pasinaudoti jam skirta vieta. Dėl to vairuotojai sugaišta laiko ieškodami vietos, kyla konfliktų tarp aikštelės naudotojų, o aikštelės valdytojui sudėtingiau kontroliuoti jos užimtumą.
+## Įrankiai ir technologijos
 
-**Nauda:**
-Sistema leis vairuotojui prieš atvykstant peržiūrėti parkavimo aikštelę, matyti vietų prieinamumą pasirinktu laikotarpiu ir iš anksto rezervuoti tinkamą vietą. Tai turėtų sumažinti laiką, praleidžiamą ieškant laisvos vietos, ir padėti efektyviau išnaudoti aikštelės vietas. Aikštelės valdytojui sistema suteiks galimybę valdyti parkavimo vietas ir stebėti jų rezervacijas.
+| Įrankis | Versija / paskirtis |
+| --- | --- |
+| .NET SDK | 10.0; projektas tikrintas su 10.0.402 |
+| ASP.NET Core | .NET 10, HTTP kontroleriai ir autentifikacija slapukais |
+| MySQL Community Server | 8.4 LTS; vietinis skriptas naudoja 8.4.13 |
+| Dapper | 2.1.89 |
+| MySql.Data | 26.7.0 |
+| MediatR | 12.5.0 |
+| xUnit | Testai; tikslios paketų versijos yra testų `.csproj` |
+| PowerShell | Windows PowerShell 5.1 arba PowerShell 7 vietiniams skriptams |
 
-**Naudotojai:**
-Numatomi du pagrindiniai sistemos naudotojų tipai:
+Sąsaja parašyta HTML, CSS ir JavaScript. React, Node.js, Docker ir išorinių paslaugų API raktų paleidimui nereikia. Windows MySQL vykdymui gali reikėti Microsoft Visual C++ x64 Redistributable.
 
-* **Vairuotojas** – galės peržiūrėti parkavimo aikšteles ir jų vietas, pasirinkti norimą laikotarpį bei rezervuoti laisvą parkavimo vietą.
-* **Parkavimo aikštelės valdytojas** – galės valdyti aikštelės parkavimo vietas, jų prieinamumą ir peržiūrėti rezervacijas.
+## Skriptų paleidimas per Windows failų naršyklę
 
-**Prielaidos:**
-Daroma prielaida, kad kiekviena sistemoje registruota parkavimo aikštelė turi iš anksto apibrėžtas ir sunumeruotas parkavimo vietas. Taip pat laikoma, kad aikštelės valdytojas pateikia teisingą informaciją apie vietas ir jų prieinamumą. Prototipe fizinis automobilio buvimas konkrečioje vietoje nebus automatiškai nustatomas naudojant kameras ar parkavimo jutiklius, todėl sistema negalės automatiškai nustatyti, ar vairuotojas automobilį pastatė būtent savo rezervuotoje vietoje. Ateityje ši problema galėtų būti sprendžiama integruojant papildomas parkavimo kontrolės priemones. Fizinis šlagbaumas prototipe taip pat gali būti imituojamas programinėje sistemoje.
+PowerShell skriptus galima paleisti ir neįvedant komandos:
 
----
+1. Atidarykite projekto `scripts` aplanką.
+2. Paspauskite dešinį pelės mygtuką ant reikiamo `.ps1` failo.
+3. Pasirinkite **Run with PowerShell** („Vykdyti naudojant PowerShell“). Windows 11 šis punktas gali būti skiltyje **Show more options** („Rodyti daugiau parinkčių“).
 
-## 2. Apimtis
+Pirmam paruošimui paleiskite `Setup-Local.ps1` ir palaukite, kol jis baigs darbą. Tada programai paleisti naudokite `Start-Local.ps1`. Kol naudojate programą, jos PowerShell langą laikykite atidarytą. MySQL sustabdyti skirtas `Stop-Database.ps1`.
 
-| Funkcija                           | Ką naudotojas galės atlikti                                                                                              | Pagrindinis modulis ar pagalbinė funkcija |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
-| Parkavimo vietos rezervavimas      | Pasirinkti aikštelę, parkavimo laikotarpį ir rezervuoti tinkamą laisvą vietą                                             | **Pagrindinis modulis**                   |
-| Aikštelės ir vietų peržiūra        | Peržiūrėti aikštelės planą, parkavimo vietas ir jų prieinamumą pasirinktu laikotarpiu                                    | Pagalbinė funkcija                        |
-| Aikštelės vietų valdymas           | Aikštelės valdytojui pridėti parkavimo vietas, nustatyti jų tipą ir prieinamumą                                          | Pagalbinė funkcija                        |
-| Įvažiavimo informacijos pateikimas | Nuskenavus prie aikštelės esantį QR kodą atidaryti konkrečios aikštelės informaciją ir parodyti galimas parkavimo vietas | Pagalbinė funkcija                        |
+Taip galima paleisti ir `Test-Local.ps1`, tačiau skriptui baigus PowerShell langas gali užsidaryti. **Testų rezultatams ar klaidoms peržiūrėti skriptą paleiskite jau atidarytame terminale**, naudodami toliau pateiktas komandas. Jei „Run with PowerShell“ parinkties nėra arba vykdymą blokuoja PowerShell politika, naudokite dokumentuotą komandą su `-ExecutionPolicy Bypass`; organizacijos taikomi apribojimai vis tiek gali neleisti vykdyti skriptų.
 
-**Į kursinio darbo apimtį neįeina:**
-Pirmoje sistemos versijoje neplanuojama įgyvendinti realaus bankinių kortelių mokėjimų apdorojimo, automobilių numerių atpažinimo kameromis, fizinių parkavimo vietų užimtumo jutiklių ir tiesioginės integracijos su realiu šlagbaumu. Mobiliąją programėlę planuojama svarstyti kaip tolimesnę sistemos plėtros kryptį, kai bus sukurtas veikiantis internetinės sistemos prototipas.
+## Pirmas paruošimas Windows aplinkoje
 
----
-
-## 3. Pagrindinis modulis
-
-**Pavadinimas ir atsakomybė:**
-Parkavimo vietos rezervavimo modulis. Jo atsakomybė – pagal naudotojo pasirinktą aikštelę ir laikotarpį nustatyti, ar pasirinkta parkavimo vieta gali būti rezervuota, išvengti persidengiančių rezervacijų ir, esant galimybei, sukurti rezervaciją.
-
-**Logika, kurią reikės projektuoti ir testuoti:**
-Pagrindinę modulio logiką sudarys parkavimo vietos prieinamumo tikrinimas ir rezervacijų konfliktų nustatymas. Sistema turės patikrinti, ar pasirinkta vieta egzistuoja ir yra prieinama rezervacijoms, ar pasirinktas laikotarpis yra tinkamas ir ar tuo laikotarpiu vieta nėra rezervuota kito naudotojo. Jei pasirinktos vietos rezervuoti negalima, sistema turės atmesti rezervaciją ir informuoti naudotoją apie priežastį.
-
-**Įvestis:**
-Aikštelės identifikatorius, parkavimo vietos identifikatorius, rezervacijos pradžios ir pabaigos laikas bei rezervaciją atliekantis naudotojas.
-
-Pavyzdys:
-
-* Aikštelė: A
-* Parkavimo vieta: A06
-* Rezervacijos pradžia: 2026-10-10 18:00
-* Rezervacijos pabaiga: 2026-10-10 21:00
-
-**Išvestis:**
-Sėkmingai sukurta rezervacija arba informacija, kodėl rezervacijos sukurti nepavyko.
-
-Sėkmingo rezultato pavyzdys:
-
-> Parkavimo vieta A06 rezervuota 2026-10-10 nuo 18:00 iki 21:00.
-
-**Veikimo eiga:**
-
-1. Naudotojas pasirenka parkavimo aikštelę ir norimą rezervacijos laikotarpį.
-2. Sistema pateikia tuo laikotarpiu prieinamas parkavimo vietas.
-3. Naudotojas pasirenka norimą vietą.
-4. Sistema dar kartą patikrina pasirinktos vietos prieinamumą.
-5. Patikrinama, ar rezervacijos laikotarpis nepersidengia su jau egzistuojančia tos vietos rezervacija.
-6. Jei konfliktų nėra, rezervacija išsaugoma.
-7. Naudotojui pateikiamas rezervacijos patvirtinimas. Jei rezervacija negalima, pateikiama jos atmetimo priežastis.
-
-### Taisyklės arba sprendimo žingsniai
-
-1. Rezervacijos pabaigos laikas turi būti vėlesnis už jos pradžios laiką.
-2. Vienai parkavimo vietai negali egzistuoti dvi laike persidengiančios aktyvios rezervacijos.
-3. Rezervuoti galima tik egzistuojančią ir rezervacijoms prieinamą parkavimo vietą.
-
-### Scenarijai būsimiems testams
-
-| Scenarijus                        | Pradinės sąlygos ir konkreti įvestis                                                       | Veiksmas                                   | Tikslus laukiamas rezultatas                                                                                             |
-| --------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| Įprastas atvejis                  | A06 yra laisva 2026-10-10 nuo 18:00 iki 21:00                                              | Naudotojas rezervuoja A06 nurodytam laikui | Sukuriama rezervacija A06 vietai nuo 18:00 iki 21:00 ir naudotojui pateikiamas patvirtinimas                             |
-| Ribinis atvejis arba konfliktas   | A06 jau rezervuota nuo 18:00 iki 20:00. Naudotojas bando rezervuoti ją nuo 19:30 iki 21:00 | Pateikiamas rezervacijos prašymas          | Rezervacija nesukuriama, nes laikotarpiai persidengia. Naudotojas informuojamas, kad vieta pasirinktu laiku neprieinama  |
-| Klaida arba neįmanomas rezultatas | Naudotojas pasirenka rezervacijos pradžią 21:00, o pabaigą 18:00                           | Pateikiamas rezervacijos prašymas          | Rezervacija nesukuriama ir pateikiamas pranešimas, kad rezervacijos pabaigos laikas turi būti vėlesnis už pradžios laiką |
-
-**Jei modulis naudoja AI:**
-Netaikoma. Pagrindinis rezervavimo modulis naudos iš anksto apibrėžtas verslo taisykles.
-
----
-
-## 4. Kokybės atributas
-
-**Pasirinktas atributas:**
-Patikimumas.
-
-**Kodėl svarbus šiai sistemai:**
-Parkavimo rezervavimo sistemoje svarbu užtikrinti, kad ta pati parkavimo vieta nebūtų rezervuota keliems naudotojams tuo pačiu metu. Tokia klaida sukeltų konfliktą realioje parkavimo aikštelėje ir sumažintų naudotojų pasitikėjimą sistema.
-
-**Tikrinimo scenarijus ir sąlygos:**
-Bus imituojama situacija, kai du naudotojai beveik tuo pačiu metu bando rezervuoti tą pačią parkavimo vietą tam pačiam laikotarpiui.
-
-**Sėkmės kriterijus:**
-Iš dviejų konfliktuojančių rezervacijos užklausų tik viena turi būti sėkmingai išsaugota. Duomenų bazėje negali atsirasti dvi aktyvios tos pačios parkavimo vietos rezervacijos su persidengiančiais laikotarpiais.
-
-**Numatytas projektavimo sprendimas:**
-Rezervacijos kūrimas bus vykdomas duomenų bazės transakcijoje. Prieš tikrinant pasirinktos parkavimo vietos prieinamumą, atitinkamas parkavimo vietos įrašas bus užrakinamas transakcijos laikotarpiui. Kol pirmoji transakcija tikrina esamas rezervacijas ir kuria naują rezervaciją, kita transakcija, bandanti rezervuoti tą pačią vietą, turės laukti, kol pirmoji bus užbaigta. Gavusi prieigą antroji transakcija iš naujo patikrins vietos prieinamumą ir aptiks jau sukurtą rezervaciją, todėl konfliktuojanti rezervacija bus atmesta. Užraktas bus laikomas tik rezervacijos patikrinimo ir sukūrimo metu, kad kuo mažiau būtų ribojamos kitos sistemos operacijos.
-
-**Kaip patikrinsiu vėlesniame etape:**
-Bus sukurtas integracinis testas, kuriame dvi lygiagrečiai vykdomos užklausos bandys rezervuoti tą pačią parkavimo vietą persidengiančiam laikotarpiui. Bus patikrinta, kad pirmoji transakcija rezervavimo metu užrakina vietą, antroji negali atlikti konfliktuojančios rezervacijos iki pirmosios transakcijos pabaigos, o po pakartotinio prieinamumo patikrinimo viena iš rezervacijų yra atmetama. Galutinis kriterijus – duomenų bazėje lieka tik viena iš dviejų konfliktuojančių rezervacijų.
-
-**Sprendimo kaina arba ribojimas:**
-Papildomi prieinamumo patikrinimai ir transakcijų naudojimas apsunkina rezervavimo logiką ir gali šiek tiek padidinti užklausos vykdymo laiką, tačiau padeda užtikrinti duomenų vientisumą.
-
----
-
-## 5. Pradinė sistemos struktūra
-
-### Paprasta schema
-
-```text
-┌──────────────────────┐
-│     Naudotojas       │
-│ Naršyklė / telefonas │
-└──────────┬───────────┘
-           │
-           │   HTTP / JSON
-           ▼
-┌──────────────────────┐
-│      Frontend        │
-│    Web aplikacija    │
-└──────────┬───────────┘
-           │
-           │   REST API
-           ▼
-┌────────────────────────────┐
-│       ASP.NET Core API     │
-│                            │
-│  ┌──────────────────────┐  │
-│  │ Rezervavimo modulis  │  │
-│  └──────────────────────┘  │
-│                            │
-│  ┌──────────────────────┐  │
-│  │ Aikštelių valdymas   │  │
-│  └──────────────────────┘  │
-└──────────────┬─────────────┘
-               │
-               │ Entity Framework Core
-               ▼
-┌──────────────────────────────┐
-│        Duomenų bazė          │
-│ Aikštelės, vietos,           │
-│ naudotojai, rezervacijos     │
-└──────────────────────────────┘
+```powershell
+powershell -ExecutionPolicy Bypass -File ./scripts/Setup-Local.ps1
 ```
 
-| Sistemos dalis       | Atsakomybė                                                                                                                                                                                                           |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Web aplikacija       | Pateikti naudotojo sąsają aikštelių ir vietų peržiūrai bei rezervacijų atlikimui. Sąsaja turės būti pritaikyta ir didesnėms aikštelėms, kuriose visas parkavimo vietas vienu metu atvaizduoti gali būti nepraktiška. |
-| ASP.NET Core Web API | Priimti naudotojo užklausas, vykdyti verslo logiką ir perduoti duomenis tarp naudotojo sąsajos bei duomenų bazės                                                                                                     |
-| Rezervavimo modulis  | Tikrinti vietos prieinamumą, aptikti rezervacijų konfliktus ir kurti rezervacijas                                                                                                                                    |
-| Duomenų bazė         | Saugoti naudotojų, aikštelių, parkavimo vietų ir rezervacijų duomenis                                                                                                                                                |
+Skriptas:
 
-**Planuojamos technologijos ir pasirinkimo priežastys:**
-Serverio daliai planuojama naudoti C# ir ASP.NET Core Web API, nes ši platforma tinkama REST tipo interneto paslaugoms ir leidžia aiškiai atskirti sistemos sluoksnius bei verslo logiką. Duomenų bazės operacijoms planuojama naudoti Entity Framework Core, o duomenų saugojimui – MySQL reliacinę duomenų bazę. Naudotojo sąsajai planuojama naudoti interneto technologijas, galimai React, kad sistema būtų pasiekiama tiek kompiuterio, tiek telefono naršyklėje.
+1. Atsisiunčia MySQL į `.local` ir patikrina archyvo kontrolinę sumą.
+2. Inicializuoja vietinį MySQL serverį, pasiekiamą per `127.0.0.1:3307`; sisteminė tarnyba nekuriama.
+3. Sukuria `parkspot` bazę ir lenteles pagal [Database/schema.sql](Database/schema.sql).
+4. Sukuria programai skirtą DB naudotoją su atsitiktiniu slaptažodžiu ir `SELECT`, `INSERT`, `UPDATE`, `DELETE` teisėmis.
+5. Įrašo programos prisijungimą į `src/ParkSpot.Web/appsettings.Local.json`, vietinius testų nustatymus - į `.local/test-settings.json` ir atkuria .NET paketus.
 
-Pirmiausia planuojama sukurti veikiančią internetinės sistemos prototipo versiją. Turint veikiantį pagrindinės sistemos prototipą, ateityje planuojama apsvarstyti ir atskiros mobiliosios programėlės kūrimą. Kadangi pagrindinė sistemos verslo logika bus pasiekiama per Web API, mobili programa galėtų naudoti tą pačią serverio dalį ir duomenų bazę kaip ir internetinė aplikacija.
+Duomenys saugomi `.local/mysql-data`. Šio aplanko netrinkite norėdami tik paleisti programą iš naujo.
 
----
+**Paruošimas sukuria tuščias lenteles, bet ne organizacijas, administratorių paskyras ar aikšteles.** Organizaciją ir administratoriaus paskyrą susikurkite per administratoriaus puslapio registracijos formą.
 
-## 6. AI panaudojimas
+## Paleidimas ir sustabdymas
 
-### AI rengiant šį dokumentą
+Po pradinio paruošimo prototipas paleidžiamas viena komanda:
 
-Rengiant pradinį projektavimo dokumentą buvo naudojamas generatyvinio AI įrankis.
+```powershell
+powershell -ExecutionPolicy Bypass -File ./scripts/Start-Local.ps1
+```
 
-| Priemonė ir užduotis                                             | Ką panaudojau                                                                                                             | Ką atmečiau arba perrašiau ir kodėl                                                                                                                                                                                                                                   | Kaip patikrinau                                                                                                                           |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| ChatGPT – sistemos struktūra ir pradinės architektūros aptarimas | Panaudotos idėjos rezervavimo modulio riboms, rezervacijų konfliktų scenarijams ir pradinei sistemos struktūrai apibrėžti | Atsisakyta dalies papildomų funkcijų, tokių kaip realūs mokėjimai, automobilių numerių atpažinimas ir IoT parkavimo jutikliai, nes jos per daug išplėstų pradinio prototipo apimtį. AI pasiūlytas tekstas buvo peržiūrėtas ir pritaikytas pasirinktos sistemos idėjai | Patikrinau, ar pasiūlymai atitinka užduoties reikalavimus, ar numatytą pagrindinio modulio logiką galima įgyvendinti ir atskirai testuoti |
+Skriptas paleidžia MySQL, jei ji neveikia, ir ASP.NET programą.
 
-### Planuojamas AI naudojimas kuriant sistemą
+- Vairuotojo puslapis: [http://localhost:5091](http://localhost:5091).
 
-**Kur ir kam naudosiu AI:**
-AI planuojama naudoti kaip pagalbinę priemonę kuriant programinį kodą, analizuojant galimas klaidas, generuojant ir atliekant automatinius testus.
+Programa pati MySQL serverio nepaleidžia, schemos nekeičia ir pradinių duomenų nepildo. Pakartotinai paleidus naudojami išsaugoti duomenys.
 
-**Kaip tikrinsiu pasiūlymus ir sugeneruotą kodą:**
-AI sugeneruotas kodas nebus naudojamas jo neperžiūrėjus. Bus tikrinama jo veikimo logika, suderinamumas su likusia sistema ir vykdomi vienetų bei integraciniai testai. Sugeneruoti sprendimai prireikus bus keičiami arba perrašomi.
+Programą terminale sustabdykite `Ctrl+C`. MySQL lieka veikti. Jai sustabdyti:
 
-**Ar AI bus sistemos funkcionalumo dalis:**
-Ne. Šiuo metu AI nėra planuojamas kaip parkavimo rezervavimo sistemos funkcionalumo dalis. Pagrindinio modulio sprendimai bus priimami pagal apibrėžtas ir testuojamas verslo taisykles.
+```powershell
+powershell -ExecutionPolicy Bypass -File ./scripts/Stop-Database.ps1
+```
 
----
+### Paleidimas per Visual Studio
 
-## 7. Tolesnių darbų planas
+Atidarykite `ParkSpot.slnx` su .NET 10 palaikančia Visual Studio versija, pasirinkite `ParkSpot.Web` kaip paleidžiamą projektą. MySQL turi būti paruošta ir paleista atskirai.
 
-| Darbas                                | Apčiuopiamas rezultatas                                                                   | Planuojama darbų seka |
-| ------------------------------------- | ----------------------------------------------------------------------------------------- | --------------------- |
-| Suprojektuoti duomenų modelį          | Apibrėžtos pagrindinės esybės ir jų ryšiai: naudotojai, aikštelės, vietos ir rezervacijos | 1                     |
-| Sukurti ASP.NET Core Web API pagrindą | Veikiantis API projektas ir ryšys su duomenų baze                                         | 2                     |
-| Įgyvendinti rezervavimo modulį        | Veikiantis vietos prieinamumo tikrinimas, konfliktų aptikimas ir rezervacijos sukūrimas   | 3                     |
-| Sukurti bazinę naudotojo sąsają       | Naudotojas gali pasirinkti aikštelę, laiką, peržiūrėti vietas ir pateikti rezervaciją     | 4                     |
-| Sukurti pagrindinio modulio testus    | Automatiniai testai pagrindinėms rezervavimo taisyklėms ir konfliktų scenarijams          | 5                     |
+Po `Setup-Local.ps1` MySQL lieka veikti. Vėliau jai paleisti galima naudoti `Start-Local.ps1`, tuomet sustabdyti tik jo paleistą ASP.NET programą su `Ctrl+C` ir paleisti projektą per Visual Studio. Vienu metu nepaleiskite dviejų programos kopijų tuo pačiu prievadu. Jei kompiliuojant užrakintas `ParkSpot.Web.exe`, sustabdykite ankstesnį programos paleidimą.
 
-**Būsimo prototipo veikimo scenarijus:**
-Prototipo demonstracijos metu naudotojas pasirinks parkavimo aikštelę ir nurodys, kad nori parkuotis 2026-10-10 nuo 18:00 iki 21:00. Sistema pateiks tuo laikotarpiu prieinamas parkavimo vietas. Naudotojas pasirinks, pavyzdžiui, A06 vietą ir pateiks rezervaciją. Sistema patikrins jos prieinamumą ir sukurs rezervaciją. Pakartotinai bandant rezervuoti A06 persidengiančiam laikotarpiui, sistema turės atmesti rezervaciją ir informuoti apie konfliktą.
+## Automatiniai testai
 
-| Rizika arba neaiškumas                                                                                                                               | Kaip patikrinsiu arba sumažinsiu                                                                                                                                                                                                                                                                                    |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vienu metu pateiktos rezervacijos gali sukurti tos pačios vietos rezervavimo konfliktą                                                               | Sukursiu integracinius testus vienalaikėms rezervacijoms ir rezervacijos išsaugojimui naudosiu transakciją bei pakartotinį prieinamumo patikrinimą                                                                                                                                                                  |
-| Interaktyvaus aikštelės plano realizavimas gali užimti per daug laiko                                                                                | Pirmoje prototipo versijoje naudosiu supaprastintą aikštelės vietų atvaizdavimą. Sudėtingesnį vizualų planą įgyvendinsiu tik tuo atveju, jei liks pakankamai laiko                                                                                                                                                  |
-| Pasirinktos technologijos ar sistemos struktūra įgyvendinimo metu gali pasirodyti per sudėtinga                                                      | Pirmiausia įgyvendinsiu minimalų veikimo scenarijų nuo rezervacijos užklausos iki jos išsaugojimo.                                                                                                                                                                                                                  |
-| Didelėse parkavimo aikštelėse visų parkavimo vietų atvaizdavimas viename plane gali būti nepatogus naudotojui, ypač naudojantis mobiliuoju įrenginiu | Kuriant prototipą bus išbandyti skirtingi aikštelės atvaizdavimo būdai. Didelės aikštelės galėtų būti skirstomos į zonas ar sektorius, o naudotojui pirmiausia būtų rodoma pasirinkta aikštelės dalis ir joje esančios vietos. Taip pat bus svarstomas plano priartinimas, nutolinimas ir laisvų vietų filtravimas. |
+Greitas paleidimas:
 
+```powershell
+dotnet test
+```
 
-## Šaltiniai, jei naudojote
+Jei nenustatytas `PARKSPOT_TEST_MYSQL`, vykdomi trys verslo logikos testai, o API izoliavimo testas pažymimas `Skipped`. Taip gali nutikti ir Visual Studio lange `Test → Test Explorer`, paspaudus `Run All Tests`.
 
-Papildomi išoriniai šaltiniai rengiant pradinę sistemos idėją nebuvo naudojami. AI naudojimas aprašytas 6 skyriuje.
+Visiems keturiems testams, kai vietinė MySQL jau veikia:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ./scripts/Test-Local.ps1
+```
+
+Skriptas perskaito `.local/test-settings.json`, nustato `PARKSPOT_TEST_MYSQL` savo procesui ir paleidžia `dotnet test`. Pats MySQL serverio nepaleidžia.
+
+| Testas | Tikrinamas rezultatas |
+| --- | --- |
+| `Free_spot_creates_exact_requested_reservation` | Sukuriamas vienas įrašas su tikslia vieta, organizacija, pradžia, pabaiga ir `Created` būsena. |
+| `Overlapping_reservation_is_rejected_without_another_row` | 3 valandų rezervacija, kai kita prasideda po 2 valandų, atmetama su `409`; papildomo įrašo nėra. |
+| `Invalid_duration_is_rejected` | Nulinė trukmė atmetama su `400`; įrašas nesukuriamas. |
+| `Organization_isolation_blocks_read_cancel_and_spot_changes` | Per registracijos API sukuriama nauja organizacija ir administratorius, patikrinamas pakartotinio el. pašto atmetimas bei prisijungimas, sukuriama aikštelė ir vieta. Svetimos organizacijos rezervacijos skaitymas ir atšaukimas, vietos keitimas bei vietų pridėjimas atmetami su `404`; tikrinami savo organizacijos duomenys ir nepakeista svetima vieta bei rezervacija. |
+
+Izoliavimo testas vykdo HTTP užklausas per ASP.NET testų serverį ir naudoja tikrą MySQL. Sukuriama atsitiktinė `parkspot_test_<GUID>` bazė, įvykdoma projekto schema, paruošiami testų duomenys, o baigus pašalinama tik ši testų bazė. Įprasta `parkspot` bazė neliečiama.
+
+Naudojant kitą MySQL serverį, nustatykite `PARKSPOT_TEST_MYSQL` prisijungimo eilutę testų DB naudotojui, turinčiam teises kurti, naudoti ir šalinti testų bazes, ir vykdykite `dotnet test`.
+
+Rezultatai rodomi tame pačiame terminale. Sėkmingo visų testų paleidimo suvestinėje turi būti **4 praėję, 0 nepraėjusių ir 0 praleistų**. Nepraėjus testui pateikiamas jo pavadinimas ir klaidos detalės. Terminalo paleidimo rezultatai automatiškai nepatenka į Visual Studio `Test Explorer`; `Test-Local.ps1` atskiro rezultatų failo nekuria.
+
+## Pagrindinės verslo taisyklės
+
+- Rezervacijos pabaiga turi būti vėlesnė už pradžią, pradžia negali būti praeityje.
+- Rezervuojant nuo dabar API priima 1–10080 minučių trukmę; sąsajoje pasirenkama 0,25–168 valandų trukmė kas 15 minučių.
+- Vietos užimtumas tikrinamas visam pasirinktam laikotarpiui. Dabar laisva vieta gali būti netinkama ilgai rezervacijai, jei vėliau jau yra kitas užsakymas.
+- Persidengimas: `esama.Pradžia < nauja.Pabaiga && nauja.Pradžia < esama.Pabaiga`. Gretimi intervalai, pvz., 18:00–20:00 ir 20:00–21:00, nekonfliktuoja.
+- Vairuotojas toje pačioje aikštelėje negali turėti kelių persidengiančių neatšauktų rezervacijų. Kitoje aikštelėje arba kitu laiku rezervuoti galima.
+- Uždaryta vieta nepriima naujų rezervacijų. Ankstesnės rezervacijos lieka galioti.
+- Atšaukimas įterpia naują `Cancelled` įrašą su tuo pačiu `ReservationId`; pradinis `Created` įrašas lieka. Pasibaigus laikui papildomas įrašas nekuriamas, pasibaigusios rezervacijos atšaukti negalima.
+- Vienu veiksmu pridedama 1–500 vietų. Numeriai sudaromi iš `A0` ir bent dviejų skaitmenų eilės numerio: A001, A010, A0100. Numeracija tęsiama pasirinktoje aikštelėje.
+- Laikas bazėje saugomas UTC, sąsajoje rodomas Lietuvos laiku.
+
+Rezervavimas naudoja `READ COMMITTED` transakciją ir `SELECT ... FOR UPDATE` vietos bei vairuotojo eilutėms. Atšaukimas užrakina vietos eilutę. Tikrinimas ir įrašymas vykdomi toje pačioje transakcijoje.
+
+## Organizacijų duomenų atskyrimas
+
+Organizacija yra sistemos klientas. `Managers`, `ParkingLots`, `ParkingSpots` ir `Reservations` turi `OrganizationId`. Vairuotojai (`Users`) bendri visai platformai, todėl gali rezervuoti skirtingų organizacijų aikštelėse.
+
+Prisijungusio administratoriaus organizacija ir naudotojo ID paimami iš autentifikuotos paskyros per `CurrentActor`, o ne iš naudotojo pateikto JSON. Repozitorijos riboja skaitymą ir keitimą pagal šį kontekstą. Vairuotojas mato tik savo rezervacijas. Svetimi identifikatoriai neleidžia administratoriui perskaityti ar pakeisti kitos organizacijos duomenų; tai tikrina API testas.
+
+## Kodo struktūra
+
+```text
+src/ParkSpot.Web/
+  Processors/              API kontroleriai
+  Handlers/                MediatR IRequestHandler klasės
+  Services/                Verslo logika, autentifikacija ir paskyros kontekstas
+    Interfaces/            Servisų sutartys
+  Repositories/            SQL užklausos, jų vykdymas ir transakcijos
+    Interfaces/            Repozitorijų sutartys
+  Database/                RawSqlCommand ir SQL parametrai
+  Entities/
+    Data/                  Duomenų lentelių klasės
+    Enums/                 Rezervacijos būsenos
+    Requests/              HTTP ir MediatR užklausos
+    Responses/             API atsakymų klasės
+  Models/                  Paskyros kontekstas ir užklausų rezultatai
+  Middleware/              Bendras klaidų apdorojimas
+  Exceptions/              Verslo klaidos
+  wwwroot/                 HTML, CSS ir JavaScript
+  Program.cs               DI, autentifikacija, autorizacija ir programos paleidimas
+tests/ParkSpot.Tests/       Trys modulio testai ir vienas API izoliavimo testas
+  Support/                 Testų DB paruošimas, laikrodis ir repozitorijų pakaitalai
+Database/schema.sql        Lentelių, indeksų ir ryšių schema
+scripts/                   Paruošimo, paleidimo, testų ir DB sustabdymo skriptai
+docs/phase-1.md             I etapo aprašymas
+```

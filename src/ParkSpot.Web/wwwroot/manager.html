@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="lt">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>
+            ParkSpot · Administravimas
+        </title>
+        <link rel="stylesheet" href="/styles.css">
+        <script src="/app.js?v=5f4a52d3d872" defer>
+        </script>
+    </head>
+    <body data-kind="manager">
+        <header>
+            <a class="brand" href="/">
+                <span>
+                    ParkSpot
+                </span>
+            </a>
+            <nav>
+                <a id="switch-role" href="/manager.html" hidden>
+                    Administratoriui ↗
+                </a>
+                <span id="identity">
+                </span>
+                <button id="logout" class="secondary" hidden>
+                    Atsijungti
+                </button>
+            </nav>
+        </header>
+        <main>
+            <div id="message" role="status" aria-live="polite" hidden>
+            </div>
+            <section id="auth" class="panel auth-panel">
+                <div>
+                    <h2 id="auth-title">
+                        Prisijunk ir rezervuok
+                    </h2>
+                    <p class="muted">
+                        Viena vairuotojo paskyra – visoms ParkSpot aikštelėms.
+                    </p>
+                </div>
+                <form id="login-form">
+                    <label>
+                        El. paštas
+                        <input name="email" type="email" required maxlength="254" autocomplete="username">
+                    </label>
+                    <label>
+                        Slaptažodis
+                        <input name="password" type="password" required maxlength="128" autocomplete="current-password">
+                    </label>
+                    <button>
+                        Prisijungti
+                    </button>
+                </form>
+                <details id="register">
+                    <summary>
+                        Neturi organizacijos paskyros? Registruokis
+                    </summary>
+                    <form id="register-form">
+                        <label>
+                            Organizacijos pavadinimas
+                            <input name="organizationName" required maxlength="120" autocomplete="organization">
+                        </label>
+                        <div class="columns">
+                            <label>
+                                Vardas
+                                <input name="firstName" required maxlength="80" autocomplete="given-name">
+                            </label>
+                            <label>
+                                Pavardė
+                                <input name="lastName" required maxlength="80" autocomplete="family-name">
+                            </label>
+                        </div>
+                        <label>
+                            El. paštas
+                            <input name="email" type="email" required maxlength="254" autocomplete="email">
+                        </label>
+                        <label>
+                            Slaptažodis · bent 12 simbolių
+                            <input name="password" type="password" required minlength="12" maxlength="128" autocomplete="new-password">
+                        </label>
+                        <button>
+                            Sukurti paskyrą
+                        </button>
+                    </form>
+                </details>
+            </section>
+            <div id="workspace" hidden>
+                <section id="management" class="panel" hidden>
+                    <div class="section-heading">
+                        <h2>
+                            Aikštelių valdymas
+                        </h2>
+                    </div>
+                    <div class="columns">
+                        <form id="lot-form">
+                            <h3>
+                                Nauja aikštelė
+                            </h3>
+                            <label>
+                                Pavadinimas
+                                <input name="name" required maxlength="120">
+                            </label>
+                            <label>
+                                Adresas
+                                <input name="address" required maxlength="240">
+                            </label>
+                            <button>
+                                Sukurti aikštelę
+                            </button>
+                        </form>
+                        <form id="spots-form">
+                            <h3>
+                                Pridėti vietas
+                            </h3>
+                            <p class="muted">
+                                Vietos pridedamos pasirinktoje aikštelėje. A001, A002…
+                            </p>
+                            <label>
+                                Vietų kiekis
+                                <input name="count" type="number" value="10" min="1" max="500" required>
+                            </label>
+                            <button>
+                                Pridėti vietas
+                            </button>
+                        </form>
+                    </div>
+                </section>
+                <section class="panel">
+                    <form id="search-form">
+                        <div class="search-grid">
+                            <label>
+                                Aikštelė
+                                <select id="lot" required>
+                                </select>
+                            </label>
+                            <button>
+                                Rodyti vietas
+                            </button>
+                        </div>
+                    </form>
+                    <div class="section-heading">
+                        <p id="spot-count" class="muted">
+                        </p>
+                      
+                    </div>
+                    <div id="spots" class="spot-grid">
+                    </div>
+                    <div class="pagination">
+                        <button id="previous" class="secondary">
+                            ← Ankstesnis
+                        </button>
+                        <span id="page-label">
+                        </span>
+                        <button id="next" class="secondary">
+                            Kitas →
+                        </button>
+                    </div>
+                </section>
+                <section class="panel">
+                    <div class="section-heading">
+                        <h2 id="reservations-title">
+                            Mano rezervacijos
+                        </h2>
+                        <button id="refresh" class="secondary">
+                            Atnaujinti
+                        </button>
+                    </div>
+                    <div id="reservations">
+                    </div>
+                    <div class="pagination">
+                        <button id="reservations-previous" class="secondary">
+                            ← Ankstesnės
+                        </button>
+                        <span id="reservations-page">
+                        </span>
+                        <button id="reservations-next" class="secondary">
+                            Kitos →
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </main>
+        <dialog id="reservation-dialog" aria-labelledby="reservation-dialog-title">
+            <form id="reservation-form">
+                <h2 id="reservation-dialog-title">
+                    Rezervuoti vietą
+                </h2>
+                <p>
+                    Rezervacija prasidės iš karto. Pasirinkite trukmę.
+                </p>
+                <label>
+                    Trukmė valandomis
+                    <input id="duration-hours" type="number" min="0.25" max="168" step="0.25" value="1" required>
+                </label>
+                <p id="reservation-error" class="error" role="alert" hidden>
+                </p>
+                <div class="columns">
+                    <button type="button" id="close-reservation" class="secondary">
+                        Grįžti
+                    </button>
+                    <button type="submit">
+                        Patvirtinti rezervaciją
+                    </button>
+                </div>
+            </form>
+        </dialog>
+    </body>
+</html>
