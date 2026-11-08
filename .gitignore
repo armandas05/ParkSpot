@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+.vs/
+TestResults/
+*.user
+**/appsettings.Local.json
+.local/
+*.db
+*.db-*
+/.editorconfig
