@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Dapper;
-using MySql.Data.MySqlClient;
+using Microsoft.Data.Sqlite;
 using Microsoft.AspNetCore.Identity;
 using ParkSpot.Web.Entities.Data;
 
@@ -9,7 +9,7 @@ namespace ParkSpot.Tests.Support;
 
 internal static class TestDatabaseData
 {
-    public static async Task CreateAsync(MySqlConnection connection)
+    public static async Task CreateAsync(SqliteConnection connection)
     {
         const string password = "ParkSpot-Test-2026!";
         var userPasswordHasher = new PasswordHasher<User>();

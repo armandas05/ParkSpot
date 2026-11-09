@@ -9,7 +9,7 @@ namespace ParkSpot.Web.Repositories.Interfaces;
 
 public interface IDbRepository
 {
-    Task<DbTransaction> BeginTransactionAsync(CancellationToken cancellationToken, IsolationLevel isolationLevel = IsolationLevel.ReadCommitted);
+    Task<DbTransaction> BeginTransactionAsync(CancellationToken cancellationToken);
     Task<int> RawSqlExecuteAsync(RawSqlCommand sql, CancellationToken cancellationToken, IDbTransaction? transaction = null);
     Task<IReadOnlyList<T>> RawSqlFetchListAsync<T>(RawSqlCommand sql, CancellationToken cancellationToken, IDbTransaction? transaction = null);
     Task<T> RawSqlFetchRequiredSingleAsync<T>(RawSqlCommand sql, CancellationToken cancellationToken, IDbTransaction? transaction = null);

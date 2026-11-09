@@ -20,7 +20,7 @@ internal sealed class InMemoryReservationRepository : IReservationRepository
     };
     public List<Reservation> Events { get; } = [];
 
-    public async Task<IReservationTransaction> BeginTransactionAndLockSpotAsync(int id, CancellationToken cancellationToken)
+    public async Task<IReservationTransaction> BeginReservationTransactionAsync(CancellationToken cancellationToken)
     {
         return await Task.FromResult<IReservationTransaction>(new Transaction());
     }
@@ -43,11 +43,6 @@ internal sealed class InMemoryReservationRepository : IReservationRepository
     public async Task<bool> HasOverlapAsync(ReservationOverlapFilter filter, CancellationToken cancellationToken)
     {
         return await Task.FromResult(Events.Any(r => r.ParkingSpotId == filter.ParkingSpotId && r.Status == ReservationStatus.Created && r.StartTime < filter.End && filter.Start < r.EndTime && !Events.Any(c => c.ReservationId == r.ReservationId && c.Status == ReservationStatus.Cancelled)));
-    }
-
-    public async Task LockDriverAsync(int userId, CancellationToken cancellationToken)
-    {
-        await Task.CompletedTask;
     }
 
     public async Task<bool> HasDriverOverlapInLotAsync(ReservationOverlapFilter filter, CancellationToken cancellationToken)

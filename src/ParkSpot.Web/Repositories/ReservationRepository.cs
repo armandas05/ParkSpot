@@ -19,33 +19,14 @@ public class ReservationRepository : IReservationRepository
         _repository = repository;
     }
 
-    public async Task<IReservationTransaction> BeginTransactionAndLockSpotAsync(int parkingSpotId, CancellationToken cancellationToken)
+    public async Task<IReservationTransaction> BeginReservationTransactionAsync(CancellationToken cancellationToken)
     {
         if (_transaction is not null)
             throw new InvalidOperationException("Reservation transaction is already active.");
 
-        var transaction = await _repository.BeginTransactionAsync(cancellationToken);
+        _transaction = await _repository.BeginTransactionAsync(cancellationToken);
 
-        _transaction = transaction;
-
-        try
-        {
-            var sql = new RawSqlCommand("SELECT Id FROM ParkingSpots WHERE Id = @ParkingSpotId FOR UPDATE;");
-
-            sql.AddParameter("@ParkingSpotId", parkingSpotId);
-
-            await _repository.RawSqlFetchListAsync<int>(sql, cancellationToken, _transaction);
-
-            return new SqlReservationTransaction(transaction, () => _transaction = null);
-        }
-        catch
-        {
-            await transaction.DisposeAsync();
-
-            _transaction = null;
-
-            throw;
-        }
+        return new SqlReservationTransaction(_transaction, () => _transaction = null);
     }
 
     public Task<ParkingSpot?> FindParkingSpotAsync(int parkingSpotId, CancellationToken cancellationToken)
@@ -104,18 +85,6 @@ public class ReservationRepository : IReservationRepository
         return _repository.RawSqlExecuteScalarAsync<bool>(command, cancellationToken, _transaction);
     }
 
-    public async Task LockDriverAsync(int userId, CancellationToken cancellationToken)
-    {
-        if (_transaction is null)
-            throw new InvalidOperationException("A reservation transaction is required.");
-
-        var sql = new RawSqlCommand("SELECT Id FROM Users WHERE Id = @UserId FOR UPDATE;");
-
-        sql.AddParameter("@UserId", userId);
-
-        await _repository.RawSqlFetchListAsync<int>(sql, cancellationToken, _transaction);
-    }
-
     public Task<bool> HasDriverOverlapInLotAsync(ReservationOverlapFilter filter, CancellationToken cancellationToken)
     {
         var command = new RawSqlCommand("""
@@ -149,7 +118,7 @@ public class ReservationRepository : IReservationRepository
             VALUES
                 (@ReservationId, @OrganizationId, @ParkingSpotId, @UserId, @StartTime, @EndTime,
                  @Status, @CreatedAt, @CancelledByUserId, @CancelledByManagerId);
-            SELECT LAST_INSERT_ID();
+            SELECT last_insert_rowid();
             """);
 
         command.AddParameter("@ReservationId", reservation.ReservationId.ToString());

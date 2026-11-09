@@ -19,8 +19,6 @@
     <ProjectReference Include="..\..\src\ParkSpot.Web\ParkSpot.Web.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="../../Database/schema.sql" Link="Database/schema.sql" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
+
 
 </Project>

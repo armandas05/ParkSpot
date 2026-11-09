@@ -13,7 +13,11 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using MySql.Data.MySqlClient;
+using Microsoft.Data.Sqlite;
+using Microsoft.AspNetCore.Hosting;
+using System.IO;
+using Dapper;
+using ParkSpot.Web.Database;
 using ParkSpot.Web.Services;
 using ParkSpot.Web.Middleware;
 using ParkSpot.Web.Repositories;
@@ -22,13 +26,29 @@ using AuthenticationService = ParkSpot.Web.Services.AuthenticationService;
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true).AddEnvironmentVariables();
 
-builder.Services.AddScoped<MySqlConnection>(provider =>
-{
-    var connectionString = provider.GetRequiredService<IConfiguration>().GetConnectionString("ParkSpot")
-            ?? throw new InvalidOperationException("Configure ConnectionStrings:ParkSpot.");
+SqlMapper.AddTypeHandler(new GuidTypeHandler());
 
-    return new MySqlConnection(connectionString);
+builder.Services.AddScoped<SqliteConnection>(provider =>
+{
+    var configuration = provider.GetRequiredService<IConfiguration>();
+    var environment = provider.GetRequiredService<IWebHostEnvironment>();
+    var databasePath = configuration["Database:Path"] ?? "parkspot.db";
+    var fullPath = Path.GetFullPath(databasePath, environment.ContentRootPath);
+
+    Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+
+    var connectionString = new SqliteConnectionStringBuilder
+    {
+        DataSource = fullPath,
+        ForeignKeys = true,
+        Pooling = false,
+        DefaultTimeout = 30
+    };
+
+    return new SqliteConnection(connectionString.ToString());
 });
+
+builder.Services.AddScoped<IDatabaseInitializer, DatabaseInitializer>();
 
 builder.Services.AddMediatR(configuration => configuration.RegisterServicesFromAssembly(typeof(Program).Assembly));
 
@@ -74,6 +94,12 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("Manager", p => p.RequireRole("Manager"));
 
 var app = builder.Build();
+
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    await scope.ServiceProvider.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
+}
+
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseDefaultFiles();
 app.UseStaticFiles();

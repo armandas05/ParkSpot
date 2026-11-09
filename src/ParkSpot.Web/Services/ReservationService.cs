@@ -78,15 +78,13 @@ public class ReservationService : IReservationService
 
         _reservationRules.ValidatePeriod(data.Start, data.End, data.RequestedAt);
 
-        await using var transaction = await _reservationRepository.BeginTransactionAndLockSpotAsync(data.ParkingSpotId, cancellationToken);
+        await using var transaction = await _reservationRepository.BeginReservationTransactionAsync(cancellationToken);
 
         var parkingSpot = await _reservationRepository.FindParkingSpotAsync(data.ParkingSpotId, cancellationToken)
             ?? throw new DomainException("Parkavimo vieta nerasta.", 404);
 
         if (!parkingSpot.IsReservable)
             throw new DomainException("Ši vieta uždaryta naujoms rezervacijoms.", 409);
-
-        await _reservationRepository.LockDriverAsync(actor.Id, cancellationToken);
 
         var filter = new ReservationOverlapFilter
         {
@@ -126,7 +124,7 @@ public class ReservationService : IReservationService
         var createdReservation = await _reservationRepository.FindCreatedReservationAsync(request.ReservationId, actor, cancellationToken)
             ?? throw new DomainException("Rezervacija nerasta.", 404);
 
-        await using var transaction = await _reservationRepository.BeginTransactionAndLockSpotAsync(createdReservation.ParkingSpotId, cancellationToken);
+        await using var transaction = await _reservationRepository.BeginReservationTransactionAsync(cancellationToken);
 
         if (createdReservation.EndTime <= _timeProvider.GetUtcNow().UtcDateTime)
             throw new DomainException("Pasibaigusios rezervacijos atšaukti negalima.", 409);

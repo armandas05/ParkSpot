@@ -1,5 +1,6 @@
 using Dapper;
-using MySql.Data.MySqlClient;
+using ParkSpot.Web.Database;
+using Microsoft.Data.Sqlite;
 using ParkSpot.Tests.Support;
 using System;
 using System.Threading.Tasks;
@@ -11,13 +12,13 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ParkSpot.Tests;
 
-public class ApiTests : IClassFixture<MySqlFactory>
+public class ApiTests : IClassFixture<SqliteWebFactory>
 {
-    private readonly MySqlFactory _mySqlFactory;
+    private readonly SqliteWebFactory _sqliteWebFactory;
 
-    public ApiTests(MySqlFactory mySqlFactory)
+    public ApiTests(SqliteWebFactory sqliteWebFactory)
     {
-        _mySqlFactory = mySqlFactory;
+        _sqliteWebFactory = sqliteWebFactory;
     }
 
     private static object Request(int spot, int day)
@@ -30,10 +31,10 @@ public class ApiTests : IClassFixture<MySqlFactory>
         };
     }
 
-    [MySqlFact]
+    [Fact]
     public async Task Organization_isolation_blocks_read_cancel_and_spot_changes()
     {
-        using var registrationClient = _mySqlFactory.CreateClient();
+        using var registrationClient = _sqliteWebFactory.CreateClient();
         var registration = new
         {
             organizationName = "Nauja organizacija",
@@ -46,7 +47,7 @@ public class ApiTests : IClassFixture<MySqlFactory>
         Assert.Equal(HttpStatusCode.Created, (await registrationClient.PostAsJsonAsync("/api/auth/register/manager", registration)).StatusCode);
         Assert.Equal(HttpStatusCode.Conflict, (await registrationClient.PostAsJsonAsync("/api/auth/register/manager", registration)).StatusCode);
 
-        using var owner = await _mySqlFactory.Login("manager", 3);
+        using var owner = await _sqliteWebFactory.Login("manager", 3);
         var identity = await owner.GetFromJsonAsync<JsonElement>("/api/auth/me");
 
         Assert.Equal("Manager", identity.GetProperty("role").GetString());
@@ -71,13 +72,13 @@ public class ApiTests : IClassFixture<MySqlFactory>
         var spots = await owner.GetFromJsonAsync<JsonElement>($"/api/lots/{lotId}/spots");
         var spotId = spots.GetProperty("items")[0].GetProperty("id").GetInt32();
 
-        using var driver = await _mySqlFactory.Login("driver", 1);
+        using var driver = await _sqliteWebFactory.Login("driver", 1);
         var creation = await driver.PostAsJsonAsync("/api/reservations", Request(spotId, 10));
 
         Assert.Equal(HttpStatusCode.Created, creation.StatusCode);
 
         var id = (await creation.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("reservationId").GetString();
-        using var manager = await _mySqlFactory.Login("manager", 1);
+        using var manager = await _sqliteWebFactory.Login("manager", 1);
 
         Assert.Equal(HttpStatusCode.NotFound, (await manager.GetAsync($"/api/reservations/{id}")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await manager.PostAsync($"/api/reservations/{id}/cancel", null)).StatusCode);
@@ -100,9 +101,43 @@ public class ApiTests : IClassFixture<MySqlFactory>
 
         Assert.False(visible.GetProperty("cancelled").GetBoolean());
 
-        using var scope = _mySqlFactory.Services.CreateScope();
+        using var secondDriver = await _sqliteWebFactory.Login("driver", 2);
+        var start = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var firstAttempt = Task.Run(async () =>
+        {
+            await start.Task;
+            return await driver.PostAsJsonAsync("/api/reservations", Request(spotId, 12));
+        });
+        var secondAttempt = Task.Run(async () =>
+        {
+            await start.Task;
+            return await secondDriver.PostAsJsonAsync("/api/reservations", Request(spotId, 12));
+        });
 
-        Assert.True(await scope.ServiceProvider.GetRequiredService<MySqlConnection>()
+        start.SetResult(true);
+        var attempts = await Task.WhenAll(firstAttempt, secondAttempt);
+
+        Assert.Single(attempts, response => response.StatusCode == HttpStatusCode.Created);
+        Assert.Single(attempts, response => response.StatusCode == HttpStatusCode.Conflict);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await owner.PostAsync($"/api/reservations/{id}/cancel", null)).StatusCode);
+        var cancelled = await owner.GetFromJsonAsync<JsonElement>($"/api/reservations/{id}");
+
+        Assert.True(cancelled.GetProperty("cancelled").GetBoolean());
+
+        using var scope = _sqliteWebFactory.Services.CreateScope();
+
+        await scope.ServiceProvider.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
+        var connection = scope.ServiceProvider.GetRequiredService<SqliteConnection>();
+
+        Assert.Equal(1, await connection.ExecuteScalarAsync<int>("PRAGMA foreign_keys;"));
+        Assert.Equal(2, await connection.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM Reservations WHERE ReservationId = @Id;", new { Id = id }));
+        Assert.Equal(2, await connection.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM Reservations WHERE ParkingSpotId = @Id AND Status = 'Created';", new { Id = spotId }));
+
+
+        Assert.True(await scope.ServiceProvider.GetRequiredService<SqliteConnection>()
             .ExecuteScalarAsync<bool>("SELECT IsReservable FROM ParkingSpots WHERE Id = @Id;", new
             {
                 Id = spotId

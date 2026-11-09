@@ -5,26 +5,28 @@ using System.Threading;
 using System.Threading.Tasks;
 using ParkSpot.Web.Database;
 using Dapper;
-using MySql.Data.MySqlClient;
+using Microsoft.Data.Sqlite;
 using ParkSpot.Web.Repositories.Interfaces;
 
 namespace ParkSpot.Web.Repositories;
 
 public class DbRepository : IDbRepository
 {
-    private readonly MySqlConnection _connection;
+    private readonly SqliteConnection _connection;
 
-    public DbRepository(MySqlConnection connection)
+    public DbRepository(SqliteConnection connection)
     {
         _connection = connection;
     }
 
-    public async Task<DbTransaction> BeginTransactionAsync(CancellationToken cancellationToken, IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
+    public async Task<DbTransaction> BeginTransactionAsync(CancellationToken cancellationToken)
     {
         if (_connection.State != ConnectionState.Open)
             await _connection.OpenAsync(cancellationToken);
 
-        return await _connection.BeginTransactionAsync(isolationLevel, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return _connection.BeginTransaction(deferred: false);
     }
 
     public Task<int> RawSqlExecuteAsync(RawSqlCommand sql, CancellationToken cancellationToken, IDbTransaction? transaction = null)

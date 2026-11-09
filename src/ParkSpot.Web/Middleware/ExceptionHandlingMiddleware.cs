@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
-using MySql.Data.MySqlClient;
+using Microsoft.Data.Sqlite;
 
 namespace ParkSpot.Web.Middleware;
 
@@ -31,9 +31,13 @@ public class ExceptionHandlingMiddleware : IMiddleware
         {
             await WriteError(context, 400, "Netinkami užklausos duomenys.");
         }
-        catch (MySqlException exception) when (exception.Number == 1062)
+        catch (SqliteException exception) when (exception.SqliteExtendedErrorCode is 2067 or 1555)
         {
             await WriteError(context, 409, "Įrašas jau egzistuoja. Atnaujinkite duomenis ir bandykite dar kartą.");
+        }
+        catch (SqliteException exception) when (exception.SqliteErrorCode is 5 or 6)
+        {
+            await WriteError(context, 409, "Duomenų bazė užimta. Pakartokite veiksmą.");
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

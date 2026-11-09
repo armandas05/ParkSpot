@@ -3,7 +3,8 @@
 <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.89" />
     <PackageReference Include="MediatR" Version="12.5.0" />
-    <PackageReference Include="MySql.Data" Version="26.7.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.9" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -11,5 +12,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="**/*.db;**/*.db-*" />
+    <None Remove="**/*.db;**/*.db-*" />
+    <EmbeddedResource Include="../../Database/schema.sql" LogicalName="ParkSpot.Database.schema.sql" />
+  </ItemGroup>
 
 </Project>

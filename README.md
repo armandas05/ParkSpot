@@ -1,165 +1,144 @@
 # ParkSpot
 
-Programų sistemų projektavimo kursinio darbo II etapas - veikiantis parkavimo vietų rezervavimo prototipas. I etapo aprašymas: [docs/phase-1.md](docs/phase-1.md).
+Programų sistemų projektavimo kursinio darbo II etapas — veikiantis parkavimo vietų rezervavimo prototipas. I etapo aprašymas: [docs/phase-1.md](docs/phase-1.md).
 
-Vairuotojas gali rezervuoti vietą bet kurios sistemoje esančios organizacijos aikštelėje. Organizacijos administratorius valdo tik savo organizacijos aikšteles, vietas ir rezervacijas. Pagrindinis modulis - rezervavimas su verslo taisyklėmis, konfliktų apdorojimu ir duomenų išsaugojimu MySQL.
+Vairuotojas rezervuoja vietą bet kurios organizacijos aikštelėje. Administratorius valdo tik savo organizacijos aikšteles, vietas ir rezervacijas. Sistema naudoja vietinę **SQLite** duomenų bazę: pirmą kartą paleista programa pati sukuria `parkspot.db` ir lenteles, o vėliau naudoja išsaugotus duomenis.
 
-## Įgyvendintos funkcijos
+## Reikalingi įrankiai
 
-- Vairuotojo ir administratoriaus registracija, prisijungimas bei atsijungimas. Administratoriaus registracija sukuria naują organizaciją. Nuoroda į kitą prisijungimo puslapį rodoma tik neprisijungus.
-- Aikštelės pasirinkimas ir numeruotų vietų kortelės, po 30 vietų puslapyje. Vairuotojas mato šiuo metu laisvas vietas, administratorius - visas savo pasirinktos aikštelės vietas.
-- Pasirinkus vietą, rezervuojama nuo dabartinio laiko nurodytai trukmei. Tikrinamas visas laikotarpis, įskaitant būsimas rezervacijas.
-- Savo rezervacijų peržiūra ir atšaukimas. Rezervacijos identifikatorius sąsajoje rodomas tik administratoriui.
-- Administratoriaus aikštelių kūrimas, vietų pridėjimas pagal kiekį ir vietos uždarymas naujoms rezervacijoms.
-- Organizacijų duomenų atskyrimas sistemos logikoje ir SQL užklausose.
-- Keturi automatiniai testai: trys rezervavimo modulio ir vienas organizacijų izoliavimo testas.
+- .NET SDK 10.0 (projektas tikrintas su 10.0.402).
+- Pasirinktinai — .NET 10 palaikanti Visual Studio.
 
-## Įrankiai ir technologijos
+MySQL serverio, jo slaptažodžio, PowerShell skriptų, Docker, Node.js ir API raktų nereikia. Pirmą kartą atkuriant NuGet paketus reikia interneto arba jau atsisiųstų paketų.
 
-| Įrankis | Versija / paskirtis |
+Technologijos: ASP.NET Core 10, Dapper 2.1.89, MediatR 12.5.0, Microsoft.Data.Sqlite 10.0.9, SQLitePCLRaw.bundle_e_sqlite3 3.0.5 ir xUnit. SQLite biblioteka atsisiunčiama kartu su .NET paketais; atskirai jos diegti nereikia. Tikslios versijos nurodytos `.csproj` failuose. Entity Framework nenaudojamas.
+
+## Paleidimas
+
+### Per Visual Studio
+
+1. Atsisiųskite projektą ir atidarykite `ParkSpot.slnx`.
+2. Pasirinkite `ParkSpot.Web` kaip **Startup Project** ir profilį **http**.
+3. Paleiskite su **F5** arba **Ctrl + F5**. Visual Studio atkurs reikalingus paketus.
+4. Programa automatiškai paruoš duomenų bazę. Susikurkite paskyras pagal tolesnę instrukciją.
+
+### Per terminalą
+
+Komandas vykdykite `ParkSpot` aplanke, kuriame yra `ParkSpot.slnx`. Tinka ir Command Prompt — PowerShell nereikalingas.
+
+```text
+dotnet run --project src/ParkSpot.Web --launch-profile http
+```
+
+Tai viena paleidimo komanda: prireikus atkuriami paketai, sukompiliuojamas projektas ir sukuriama bazė. Programai sustabdyti spauskite `Ctrl+C`; papildomo DB serverio stabdyti nereikia.
+
+Jei prievadas užimtas arba kompiliuojant užrakintas `ParkSpot.Web.exe`, sustabdykite ankstesnę programos kopiją. Vienu metu jos nepaleiskite ir terminale, ir per Visual Studio tuo pačiu prievadu.
+
+## Duomenų bazė ir konfigūracija
+
+Numatytoji bazės vieta paleidžiant iš projekto:
+
+```text
+src/ParkSpot.Web/parkspot.db
+```
+
+`Database:Path` nustatymas yra `appsettings.json`. Santykinis kelias skaičiuojamas nuo programos turinio katalogo (`ContentRootPath`), o ne nuo savavališko terminalo aplanko. Publikuotą programą paleiskite iš jos katalogo arba nurodykite absoliutų DB kelią. Programai reikia rašymo teisių bazės aplanke.
+
+Pasirinktinis `appsettings.Local.json` gali pakeisti kelią; jo kurti įprastam paleidimui nereikia. Pavyzdys: [appsettings.Local.example.json](src/ParkSpot.Web/appsettings.Local.example.json).
+
+```json
+{
+  "Database": {
+    "Path": "parkspot.db"
+  }
+}
+```
+
+Galima naudoti ir aplinkos kintamąjį `Database__Path`, turintį pirmenybę prieš JSON. DB naudotojo ir slaptažodžio nėra.
+
+Paskyros, organizacijos, aikštelės ir rezervacijos išlieka po programos perkrovimo. Automatinio demonstracinių duomenų užpildymo nėra. Atsarginei kopijai sustabdykite programą ir nukopijuokite `.db` failą.
+
+## Paskyros ir pirmi duomenys
+
+1. Administratoriaus puslapyje išskleiskite **„Neturi organizacijos paskyros? Registruokis“**.
+2. Įveskite organizacijos pavadinimą, vardą, pavardę, el. paštą ir 12–128 simbolių slaptažodį.
+3. Prisijunkite sukurta administratoriaus paskyra, sukurkite aikštelę ir pridėkite vietų pagal kiekį.
+4. Vairuotojo puslapyje užregistruokite vairuotoją, prisijunkite ir rezervuokite vietą.
+
+Kiekviena administratoriaus registracija sukuria naują organizaciją. Organizacija ir administratorius įrašomi viena transakcija. Organizacijos ID parenka serveris; per registraciją prisijungti prie svetimos esamos organizacijos negalima. Pakartotinis administratoriaus el. paštas atmetamas su `409`. Slaptažodžiai saugomi kaip ASP.NET `PasswordHasher` maišos.
+
+Dviejų klientų demonstracijai pakartokite administratoriaus registraciją su kitu el. paštu:
+
+| Duomenys | Demonstravimo pavyzdys |
 | --- | --- |
-| .NET SDK | 10.0; projektas tikrintas su 10.0.402 |
-| ASP.NET Core | .NET 10, HTTP kontroleriai ir autentifikacija slapukais |
-| MySQL Community Server | 8.4 LTS; vietinis skriptas naudoja 8.4.13 |
-| Dapper | 2.1.89 |
-| MySql.Data | 26.7.0 |
-| MediatR | 12.5.0 |
-| xUnit | Testai; tikslios paketų versijos yra testų `.csproj` |
-| PowerShell | Windows PowerShell 5.1 arba PowerShell 7 vietiniams skriptams |
+| Organizacijos | Organizacija A ir Organizacija B |
+| Administratoriai | Po vieną kiekvienai organizacijai |
+| Aikštelės | Po vieną kiekvienai organizacijai |
+| Vietos | Kiekvienoje aikštelėje pridėkite bent kelias vietas |
+| Vairuotojai | Du skirtingi vairuotojai konflikto demonstracijai |
 
-Sąsaja parašyta HTML, CSS ir JavaScript. React, Node.js, Docker ir išorinių paslaugų API raktų paleidimui nereikia. Windows MySQL vykdymui gali reikėti Microsoft Visual C++ x64 Redistributable.
+Tai pavyzdžiai, kuriuos susikuriate per sąsają, o ne iš anksto įrašytos paskyros. Rankinio SQL vykdymo nereikia.
 
-## Skriptų paleidimas per Windows failų naršyklę
+## Įgyvendintos funkcijos ir taisyklės
 
-PowerShell skriptus galima paleisti ir neįvedant komandos:
-
-1. Atidarykite projekto `scripts` aplanką.
-2. Paspauskite dešinį pelės mygtuką ant reikiamo `.ps1` failo.
-3. Pasirinkite **Run with PowerShell** („Vykdyti naudojant PowerShell“). Windows 11 šis punktas gali būti skiltyje **Show more options** („Rodyti daugiau parinkčių“).
-
-Pirmam paruošimui paleiskite `Setup-Local.ps1` ir palaukite, kol jis baigs darbą. Tada programai paleisti naudokite `Start-Local.ps1`. Kol naudojate programą, jos PowerShell langą laikykite atidarytą. MySQL sustabdyti skirtas `Stop-Database.ps1`.
-
-Taip galima paleisti ir `Test-Local.ps1`, tačiau skriptui baigus PowerShell langas gali užsidaryti. **Testų rezultatams ar klaidoms peržiūrėti skriptą paleiskite jau atidarytame terminale**, naudodami toliau pateiktas komandas. Jei „Run with PowerShell“ parinkties nėra arba vykdymą blokuoja PowerShell politika, naudokite dokumentuotą komandą su `-ExecutionPolicy Bypass`; organizacijos taikomi apribojimai vis tiek gali neleisti vykdyti skriptų.
-
-## Pirmas paruošimas Windows aplinkoje
-
-```powershell
-powershell -ExecutionPolicy Bypass -File ./scripts/Setup-Local.ps1
-```
-
-Skriptas:
-
-1. Atsisiunčia MySQL į `.local` ir patikrina archyvo kontrolinę sumą.
-2. Inicializuoja vietinį MySQL serverį, pasiekiamą per `127.0.0.1:3307`; sisteminė tarnyba nekuriama.
-3. Sukuria `parkspot` bazę ir lenteles pagal [Database/schema.sql](Database/schema.sql).
-4. Sukuria programai skirtą DB naudotoją su atsitiktiniu slaptažodžiu ir `SELECT`, `INSERT`, `UPDATE`, `DELETE` teisėmis.
-5. Įrašo programos prisijungimą į `src/ParkSpot.Web/appsettings.Local.json`, vietinius testų nustatymus - į `.local/test-settings.json` ir atkuria .NET paketus.
-
-Duomenys saugomi `.local/mysql-data`. Šio aplanko netrinkite norėdami tik paleisti programą iš naujo.
-
-**Paruošimas sukuria tuščias lenteles, bet ne organizacijas, administratorių paskyras ar aikšteles.** Organizaciją ir administratoriaus paskyrą susikurkite per administratoriaus puslapio registracijos formą.
-
-## Paleidimas ir sustabdymas
-
-Po pradinio paruošimo prototipas paleidžiamas viena komanda:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File ./scripts/Start-Local.ps1
-```
-
-Skriptas paleidžia MySQL, jei ji neveikia, ir ASP.NET programą.
-
-- Vairuotojo puslapis: [http://localhost:5091](http://localhost:5091).
-
-Programa pati MySQL serverio nepaleidžia, schemos nekeičia ir pradinių duomenų nepildo. Pakartotinai paleidus naudojami išsaugoti duomenys.
-
-Programą terminale sustabdykite `Ctrl+C`. MySQL lieka veikti. Jai sustabdyti:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File ./scripts/Stop-Database.ps1
-```
-
-### Paleidimas per Visual Studio
-
-Atidarykite `ParkSpot.slnx` su .NET 10 palaikančia Visual Studio versija, pasirinkite `ParkSpot.Web` kaip paleidžiamą projektą. MySQL turi būti paruošta ir paleista atskirai.
-
-Po `Setup-Local.ps1` MySQL lieka veikti. Vėliau jai paleisti galima naudoti `Start-Local.ps1`, tuomet sustabdyti tik jo paleistą ASP.NET programą su `Ctrl+C` ir paleisti projektą per Visual Studio. Vienu metu nepaleiskite dviejų programos kopijų tuo pačiu prievadu. Jei kompiliuojant užrakintas `ParkSpot.Web.exe`, sustabdykite ankstesnį programos paleidimą.
+- Vairuotojo bei administratoriaus registracija, prisijungimas ir atsijungimas. Nuorodos į kitą prisijungimo puslapį rodomos tik neprisijungus.
+- Vairuotojas mato šiuo metu laisvas pasirinktos aikštelės vietas. Administratorius mato visas savo aikštelės vietas. Kortelės puslapiuojamos po 30; vietos numerio paieškos lauko nėra.
+- Pasirinkus vietą rezervuojama nuo dabar nurodytai trukmei. API priima 1–10080 minučių; sąsajoje pasirenkama 0,25–168 valandos kas 15 minučių.
+- Tikrinamas visas laikotarpis: dabar laisva vieta gali netikti ilgesnei rezervacijai, jei vėliau ji jau rezervuota.
+- Persidengimas: `esama.Pradžia < nauja.Pabaiga && nauja.Pradžia < esama.Pabaiga`. Gretimi intervalai, pvz., 18:00–20:00 ir 20:00–21:00, nekonfliktuoja.
+- Vairuotojas toje pačioje aikštelėje negali turėti kelių persidengiančių neatšauktų rezervacijų. Kitoje aikštelėje ar kitu metu rezervuoti galima.
+- Uždaryta vieta nepriima naujų rezervacijų. Ankstesnės lieka galioti.
+- Atšaukiant įrašoma nauja `Cancelled` eilutė su tuo pačiu `ReservationId`, išsaugant `Created` eilutę. Pasibaigus laikui papildomas įrašas nekuriamas; pasibaigusios rezervacijos atšaukti negalima.
+- Vairuotojas mato savo rezervacijas, administratorius — savo organizacijos rezervacijas. Rezervacijos ID sąsajoje rodomas tik administratoriui.
+- Vienu veiksmu pridedama 1–500 vietų. Formatą sudaro `A0` ir bent dviejų skaitmenų numeris: A001, A010, A0100. Numeracija tęsiama toje pačioje aikštelėje.
+- Laikas saugomas UTC ir sąsajoje rodomas Lietuvos laiku. API taip pat leidžia rezervuoti nurodant pradžią ir pabaigą; pradžia negali būti praeityje.
 
 ## Automatiniai testai
 
-Greitas paleidimas:
+Iš projekto aplanko:
 
-```powershell
+```text
 dotnet test
 ```
 
-Jei nenustatytas `PARKSPOT_TEST_MYSQL`, vykdomi trys verslo logikos testai, o API izoliavimo testas pažymimas `Skipped`. Taip gali nutikti ir Visual Studio lange `Test → Test Explorer`, paspaudus `Run All Tests`.
+Arba Visual Studio: **Test → Test Explorer → Run All Tests**.
 
-Visiems keturiems testams, kai vietinė MySQL jau veikia:
+**Visi keturi testai veikia be papildomos konfigūracijos, MySQL ar PowerShell.** API testui automatiškai sukuriamas atskiras laikinas SQLite failas, naudojamas tikras programos schemos inicializavimas, o baigus failas pašalinamas. Naudotojo `parkspot.db` neliečiamas.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File ./scripts/Test-Local.ps1
-```
-
-Skriptas perskaito `.local/test-settings.json`, nustato `PARKSPOT_TEST_MYSQL` savo procesui ir paleidžia `dotnet test`. Pats MySQL serverio nepaleidžia.
-
-| Testas | Tikrinamas rezultatas |
+| Testas | Tikrinama |
 | --- | --- |
-| `Free_spot_creates_exact_requested_reservation` | Sukuriamas vienas įrašas su tikslia vieta, organizacija, pradžia, pabaiga ir `Created` būsena. |
+| `Free_spot_creates_exact_requested_reservation` | Vienas rezervacijos įrašas su tikslia vieta, organizacija, pradžia, pabaiga ir būsena. |
 | `Overlapping_reservation_is_rejected_without_another_row` | 3 valandų rezervacija, kai kita prasideda po 2 valandų, atmetama su `409`; papildomo įrašo nėra. |
-| `Invalid_duration_is_rejected` | Nulinė trukmė atmetama su `400`; įrašas nesukuriamas. |
-| `Organization_isolation_blocks_read_cancel_and_spot_changes` | Per registracijos API sukuriama nauja organizacija ir administratorius, patikrinamas pakartotinio el. pašto atmetimas bei prisijungimas, sukuriama aikštelė ir vieta. Svetimos organizacijos rezervacijos skaitymas ir atšaukimas, vietos keitimas bei vietų pridėjimas atmetami su `404`; tikrinami savo organizacijos duomenys ir nepakeista svetima vieta bei rezervacija. |
+| `Invalid_duration_is_rejected` | Nulinė trukmė atmetama su `400`; rezervacija nesukuriama. |
+| `Organization_isolation_blocks_read_cancel_and_spot_changes` | Naujos organizacijos registracija ir prisijungimas; svetimų duomenų skaitymo ir keitimo atmetimas; SQLite vienalaikio rezervavimo konfliktas, atšaukimas ir išsaugoti įrašai pakartotinai inicializavus schemą. |
 
-Izoliavimo testas vykdo HTTP užklausas per ASP.NET testų serverį ir naudoja tikrą MySQL. Sukuriama atsitiktinė `parkspot_test_<GUID>` bazė, įvykdoma projekto schema, paruošiami testų duomenys, o baigus pašalinama tik ši testų bazė. Įprasta `parkspot` bazė neliečiama.
+`TestDatabaseData` užpildo tik laikiną testų bazę: dvi organizacijas, du administratorius, du vairuotojus, po aikštelę ir šešias vietas bei būsimas rezervacijas. Įprastas programos paleidimas šių duomenų nekuria.
 
-Naudojant kitą MySQL serverį, nustatykite `PARKSPOT_TEST_MYSQL` prisijungimo eilutę testų DB naudotojui, turinčiam teises kurti, naudoti ir šalinti testų bazes, ir vykdykite `dotnet test`.
-
-Rezultatai rodomi tame pačiame terminale. Sėkmingo visų testų paleidimo suvestinėje turi būti **4 praėję, 0 nepraėjusių ir 0 praleistų**. Nepraėjus testui pateikiamas jo pavadinimas ir klaidos detalės. Terminalo paleidimo rezultatai automatiškai nepatenka į Visual Studio `Test Explorer`; `Test-Local.ps1` atskiro rezultatų failo nekuria.
-
-## Pagrindinės verslo taisyklės
-
-- Rezervacijos pabaiga turi būti vėlesnė už pradžią, pradžia negali būti praeityje.
-- Rezervuojant nuo dabar API priima 1–10080 minučių trukmę; sąsajoje pasirenkama 0,25–168 valandų trukmė kas 15 minučių.
-- Vietos užimtumas tikrinamas visam pasirinktam laikotarpiui. Dabar laisva vieta gali būti netinkama ilgai rezervacijai, jei vėliau jau yra kitas užsakymas.
-- Persidengimas: `esama.Pradžia < nauja.Pabaiga && nauja.Pradžia < esama.Pabaiga`. Gretimi intervalai, pvz., 18:00–20:00 ir 20:00–21:00, nekonfliktuoja.
-- Vairuotojas toje pačioje aikštelėje negali turėti kelių persidengiančių neatšauktų rezervacijų. Kitoje aikštelėje arba kitu laiku rezervuoti galima.
-- Uždaryta vieta nepriima naujų rezervacijų. Ankstesnės rezervacijos lieka galioti.
-- Atšaukimas įterpia naują `Cancelled` įrašą su tuo pačiu `ReservationId`; pradinis `Created` įrašas lieka. Pasibaigus laikui papildomas įrašas nekuriamas, pasibaigusios rezervacijos atšaukti negalima.
-- Vienu veiksmu pridedama 1–500 vietų. Numeriai sudaromi iš `A0` ir bent dviejų skaitmenų eilės numerio: A001, A010, A0100. Numeracija tęsiama pasirinktoje aikštelėje.
-- Laikas bazėje saugomas UTC, sąsajoje rodomas Lietuvos laiku.
-
-Rezervavimas naudoja `READ COMMITTED` transakciją ir `SELECT ... FOR UPDATE` vietos bei vairuotojo eilutėms. Atšaukimas užrakina vietos eilutę. Tikrinimas ir įrašymas vykdomi toje pačioje transakcijoje.
-
-## Organizacijų duomenų atskyrimas
-
-Organizacija yra sistemos klientas. `Managers`, `ParkingLots`, `ParkingSpots` ir `Reservations` turi `OrganizationId`. Vairuotojai (`Users`) bendri visai platformai, todėl gali rezervuoti skirtingų organizacijų aikštelėse.
-
-Prisijungusio administratoriaus organizacija ir naudotojo ID paimami iš autentifikuotos paskyros per `CurrentActor`, o ne iš naudotojo pateikto JSON. Repozitorijos riboja skaitymą ir keitimą pagal šį kontekstą. Vairuotojas mato tik savo rezervacijas. Svetimi identifikatoriai neleidžia administratoriui perskaityti ar pakeisti kitos organizacijos duomenų; tai tikrina API testas.
+Rezultatus matysite terminale arba `Test Explorer`, priklausomai nuo paleidimo būdo. Sėkminga suvestinė: **4 praėję, 0 nepraėjusių, 0 praleistų**. Papildomo `PARKSPOT_TEST_MYSQL` kintamojo ar testų prisijungimo failo nebėra.
 
 ## Kodo struktūra
 
 ```text
 src/ParkSpot.Web/
-  Processors/              API kontroleriai
+  Processors/              HTTP kontroleriai
   Handlers/                MediatR IRequestHandler klasės
-  Services/                Verslo logika, autentifikacija ir paskyros kontekstas
+  Services/                Verslo taisyklės, registracija ir paskyros kontekstas
     Interfaces/            Servisų sutartys
-  Repositories/            SQL užklausos, jų vykdymas ir transakcijos
+  Repositories/            SQL užklausos, vykdymas ir transakcijos
     Interfaces/            Repozitorijų sutartys
-  Database/                RawSqlCommand ir SQL parametrai
+  Database/                RawSqlCommand, schemos inicializavimas, Guid konvertavimas
   Entities/
-    Data/                  Duomenų lentelių klasės
+    Data/                  Lentelių duomenų klasės
     Enums/                 Rezervacijos būsenos
     Requests/              HTTP ir MediatR užklausos
-    Responses/             API atsakymų klasės
-  Models/                  Paskyros kontekstas ir užklausų rezultatai
+    Responses/             API atsakymai
+  Models/                  Paskyros kontekstas, filtrai, rezultatai ir kūrimo duomenys
   Middleware/              Bendras klaidų apdorojimas
   Exceptions/              Verslo klaidos
   wwwroot/                 HTML, CSS ir JavaScript
-  Program.cs               DI, autentifikacija, autorizacija ir programos paleidimas
-tests/ParkSpot.Tests/       Trys modulio testai ir vienas API izoliavimo testas
-  Support/                 Testų DB paruošimas, laikrodis ir repozitorijų pakaitalai
-Database/schema.sql        Lentelių, indeksų ir ryšių schema
-scripts/                   Paruošimo, paleidimo, testų ir DB sustabdymo skriptai
+  Program.cs               DI, autentifikacija, DB paruošimas ir paleidimas
+tests/ParkSpot.Tests/       Keturi testai
+  Support/                 Laikina SQLite bazė ir testų pagalbinės klasės
+Database/schema.sql        Automatiškai pritaikoma SQLite schema
 docs/phase-1.md             I etapo aprašymas
 ```

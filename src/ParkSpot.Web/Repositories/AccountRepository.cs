@@ -44,7 +44,7 @@ public class AccountRepository : IAccountRepository
         var command = new RawSqlCommand("""
             INSERT INTO Users (FirstName, LastName, Email, PasswordHash, CreatedAt)
             VALUES (@FirstName, @LastName, @Email, @PasswordHash, @CreatedAt);
-            SELECT LAST_INSERT_ID();
+            SELECT last_insert_rowid();
             """);
 
         command.AddParameter("@FirstName", user.FirstName);
@@ -63,7 +63,7 @@ public class AccountRepository : IAccountRepository
         var organizationCommand = new RawSqlCommand("""
             INSERT INTO Organizations (Name, CreatedAt)
             VALUES (@Name, @CreatedAt);
-            SELECT LAST_INSERT_ID();
+            SELECT last_insert_rowid();
             """);
 
         organizationCommand.AddParameter("@Name", organization.Name);
@@ -75,7 +75,7 @@ public class AccountRepository : IAccountRepository
         var managerCommand = new RawSqlCommand("""
             INSERT INTO Managers (OrganizationId, FirstName, LastName, Email, PasswordHash, CreatedAt)
             VALUES (@OrganizationId, @FirstName, @LastName, @Email, @PasswordHash, @CreatedAt);
-            SELECT LAST_INSERT_ID();
+            SELECT last_insert_rowid();
             """);
 
         managerCommand.AddParameter("@OrganizationId", manager.OrganizationId);

@@ -60,7 +60,7 @@ public class ParkingRepository : IParkingRepository
                    )) AS IsAvailable
             FROM ParkingSpots s
             WHERE s.ParkingLotId = @ParkingLotId
-              AND (@Search = '' OR LOCATE(@Search, s.Number) > 0)
+              AND (@Search = '' OR instr(s.Number, @Search) > 0)
             """;
 
         var filteredSql = " FROM (" + availabilitySql + ") available WHERE @OnlyAvailable = 0 OR IsAvailable = 1";
@@ -96,7 +96,7 @@ public class ParkingRepository : IParkingRepository
         var sql = new RawSqlCommand("""
             INSERT INTO ParkingLots (OrganizationId, Name, Address, CreatedAt)
             VALUES (@OrganizationId, @Name, @Address, @CreatedAt);
-            SELECT LAST_INSERT_ID();
+            SELECT last_insert_rowid();
             """);
 
         sql.AddParameter("@OrganizationId", parkingLot.OrganizationId);
